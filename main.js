@@ -3,7 +3,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
 let scene, camera, renderer, controls, rollObject, group;
-
+let moveQueue = [];
+let isRotating = false;
 const rotateConditions = {
   right: { axis: "x", value: 1 },
   left: { axis: "x", value: -1 },
@@ -22,7 +23,7 @@ const colorConditions = [
   ["z", -1, "white"],
 ];
 
-const step = Math.PI / 100;
+const step = Math.PI / 50;
 const faces = ["front", "back", "left", "right", "top", "bottom"];
 const directions = [-1, 1];
 const cPositions = [-1, 0, 1];
@@ -93,8 +94,8 @@ class Roll {
     this.face = face;
     this.stepCount = 0;
     this.active = true;
-    this.init();
     this.direction = direction;
+    this.init();
   }
 
   init() {
@@ -107,15 +108,19 @@ class Roll {
   }
 
   rollFace() {
-    if (this.stepCount != 50) {
-      group.rotation[this.face.axis] += this.direction * step;
-      this.stepCount += 1;
-    } else {
-      if (this.active) {
-        this.active = false;
-        this.clearGroup();
+    return new Promise((resolve) => {
+      if (this.stepCount != 25) {
+        group.rotation[this.face.axis] += this.direction * step;
+        this.stepCount += 1;
+        resolve(false); // Not finished
+      } else {
+        if (this.active) {
+          this.active = false;
+          this.clearGroup();
+        }
+        resolve(true); // Finished
       }
-    }
+    });
   }
 
   clearGroup() {
@@ -132,9 +137,8 @@ class Roll {
     group.rotation[this.face.axis] = 0;
   }
 }
-
 function createObjects() {
-  const geometry = new RoundedBoxGeometry(1, 1, 1, 1,0.12); 
+  const geometry = new RoundedBoxGeometry(1, 1, 1, 1, 0.12);
 
   let createCube = (position) => {
     let mat = [];
@@ -151,12 +155,15 @@ function createObjects() {
     cube.castShadow = true;
     cube.receiveShadow = true;
     cubes.push(cube);
-    
+
     // Add beveled edges
     const edgesGeometry = new THREE.EdgesGeometry(geometry);
-    const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 }); // Black edges
+    const edgesMaterial = new THREE.LineBasicMaterial({
+      color: 0x000000,
+      linewidth: 1,
+    }); // Black edges
     const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
-      
+
     cube.add(edges);
     scene.add(cube);
   };
@@ -171,20 +178,40 @@ function createObjects() {
 
   group = new THREE.Group();
   scene.add(group);
-  rollObject = new Roll(rotateConditions["top"], -1);
+}
+
+async function processNextMove() {
+  if (moveQueue.length === 0 || isRotating) return;
+
+  isRotating = true;
+  const move = moveQueue.shift();
+  rollObject = new Roll(rotateConditions[move.position], move.direction);
+
+  while (rollObject.active) {
+    const finished = await rollObject.rollFace();
+    if (finished) {
+      rollObject = null;
+      isRotating = false;
+      // Process next move if available
+      if (moveQueue.length > 0) {
+        processNextMove();
+      }
+      break;
+    }
+    // Wait a frame
+    await new Promise((resolve) => setTimeout(resolve, 16));
+  }
+}
+
+export function moves(position, direction) {
+  moveQueue.push({ position, direction });
+  if (!isRotating) {
+    processNextMove();
+  }
 }
 
 function update() {
-  if (rollObject) {
-    if (rollObject.active) {
-      rollObject.rollFace();
-    } else {
-      rollObject = new Roll(
-        rotateConditions[faces[Math.floor(Math.random() * faces.length)]],
-        directions[Math.floor(Math.random() * directions.length)]
-      );
-    }
-  }
+  controls.update();
 }
 
 function render() {
@@ -192,6 +219,6 @@ function render() {
   update();
   renderer.render(scene, camera);
 }
-
+window.moves = moves;
 init();
 render();

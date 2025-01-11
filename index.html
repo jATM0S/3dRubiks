@@ -1,13 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<title>My first three.js app</title>
-		<style>
-			body { margin: 0; }
-		</style>
-	</head>
-	<body>
-		<script type="module" src="/main.js"></script>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>Rubik's Cube</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      .controls {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 15px;
+        border-radius: 10px;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 5px;
+        background: #333;
+        color: white;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      button:hover {
+        background: #444;
+      }
+      button:active {
+        background: #222;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module" src="/main.js"></script>
+    <div class="controls">
+      <button onclick="moves('front', -1)">F'</button>
+      <button onclick="moves('front', 1)">F</button>
+      <button onclick="moves('top', -1)">U'</button>
+      <button onclick="moves('top', 1)">U</button>
+      <button onclick="moves('right', -1)">R'</button>
+      <button onclick="moves('right', 1)">R</button>
+    </div>
+  </body>
 </html>
