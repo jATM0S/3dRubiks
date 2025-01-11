@@ -14,18 +14,8 @@ const rotateConditions = {
   back: { axis: "z", value: -1 },
 };
 
-const colorConditions = [
-  ["x", 1, "green"],
-  ["x", -1, "orange"],
-  ["y", 1, "red"],
-  ["y", -1, "yellow"],
-  ["z", 1, "blue"],
-  ["z", -1, "white"],
-];
 
 const step = Math.PI / 50;
-const faces = ["front", "back", "left", "right", "top", "bottom"];
-const directions = [-1, 1];
 const cPositions = [-1, 0, 1];
 let cubes = [];
 
@@ -63,7 +53,7 @@ const materials = {
 function init() {
   const { innerHeight, innerWidth } = window;
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x000000); // Darker background for better contrast
+  scene.background = new THREE.Color(0x00000); // Darker background for better contrast
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   document.body.appendChild(renderer.domElement);
@@ -73,7 +63,7 @@ function init() {
   renderer.shadowMap.enabled = true;
 
   camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 1, 1000);
-  camera.position.set(6, 6, 6);
+  camera.position.set(4, 4, 7);
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true; // Add smooth damping to controls
   controls.dampingFactor = 0.05;
@@ -137,31 +127,135 @@ class Roll {
     group.rotation[this.face.axis] = 0;
   }
 }
-function createObjects() {
-  const geometry = new RoundedBoxGeometry(1, 1, 1, 1, 0.12);
+const initialColors = {
+  front: [
+    "blue",
+    "green",
+    "red",
+    "blue",
+    "green",
+    "blue",
+    "white",
+    "blue",
+    "blue",
+  ],
+  back: [
+    "green",
+    "green",
+    "green",
+    "green",
+    "green",
+    "green",
+    "green",
+    "green",
+    "green",
+  ],
+  left: [
+    "orange",
+    "orange",
+    "orange",
+    "orange",
+    "orange",
+    "orange",
+    "orange",
+    "orange",
+    "orange",
+  ],
+  right: ["red", "red", "red", "red", "red", "red", "red", "red", "red"],
+  top: [
+    "white",
+    "white",
+    "white",
+    "white",
+    "white",
+    "white",
+    "white",
+    "white",
+    "white",
+  ],
+  bottom: [
+    "yellow",
+    "yellow",
+    "yellow",
+    "yellow",
+    "yellow",
+    "yellow",
+    "yellow",
+    "yellow",
+    "yellow",
+  ],
+};
+const stateMapping = {};
 
-  let createCube = (position) => {
-    let mat = [];
-    for (let i = 0; i < 6; i++) {
-      let cnd = colorConditions[i];
-      if (position[cnd[0]] == cnd[1]) {
-        mat.push(materials[cnd[2]]);
-      } else {
-        mat.push(materials.black);
+// Generate state mapping for all 27 cubes
+function generateStateMapping() {
+  let index = 0;
+  for (let z = -1; z <= 1; z++) {
+    for (let y = -1; y <= 1; y++) {
+      for (let x = -1; x <= 1; x++) {
+        stateMapping[index] = {
+          0: x === 1 ? [3, getSubIndex(y, z)] : null, // right
+          1: x === -1 ? [2, getSubIndex(y, z)] : null, // left
+          2: y === 1 ? [4, getSubIndex(x, z)] : null, // top
+          3: y === -1 ? [5, getSubIndex(x, z)] : null, // bottom
+          4: z === 1 ? [0, getSubIndex(x, y)] : null, // front
+          5: z === -1 ? [1, getSubIndex(x, y)] : null, // back
+        };
+        index++;
       }
     }
+  }
+}
+function getSubIndex(a, b) {
+  const indexMap = {
+    "-1": 0,
+    0: 1,
+    1: 2,
+  };
+  return indexMap[a] * 3 + indexMap[b];
+}
+
+// Get cube index from position
+function getCubeIndex(position) {
+  const x = position.x + 1;
+  const y = position.y + 1;
+  const z = position.z + 1;
+  return x + y * 3 + z * 9;
+}
+function getColorFromMapping(cubeIndex, faceIndex) {
+  const mapping = stateMapping[cubeIndex]?.[faceIndex];
+  if (!mapping) return "black";
+
+  const [faceType, index] = mapping;
+  const faces = ["front", "back", "left", "right", "top", "bottom"];
+  return initialColors[faces[faceType]][index];
+}
+function createObjects() {
+  const geometry = new RoundedBoxGeometry(1, 1, 1, 1, 0.12);
+  generateStateMapping();
+
+  let createCube = (position) => {
+    const cubeIndex = getCubeIndex(position);
+    let mat = [];
+
+    // Add materials for each face based on the state mapping
+    for (let i = 0; i < 6; i++) {
+      const color = getColorFromMapping(cubeIndex, i);
+      mat.push(materials[color]);
+    }
+
     const cube = new THREE.Mesh(geometry, mat);
     cube.position.set(position.x, position.y, position.z);
     cube.castShadow = true;
     cube.receiveShadow = true;
+    cube.userData.cubeIndex = cubeIndex;
     cubes.push(cube);
 
-    // Add beveled edges
     const edgesGeometry = new THREE.EdgesGeometry(geometry);
     const edgesMaterial = new THREE.LineBasicMaterial({
       color: 0x000000,
       linewidth: 1,
-    }); // Black edges
+    });
     const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
 
     cube.add(edges);
