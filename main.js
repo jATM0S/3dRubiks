@@ -12,6 +12,10 @@ const rotateConditions = {
   bottom: { axis: "y", value: -1 },
   front: { axis: "z", value: 1 },
   back: { axis: "z", value: -1 },
+  rotateUp: { axis: "x" },
+  rotateDown: { axis: "x" },
+  rotateRight: { axis: "y" },
+  rotateLeft: { axis: "y" },
 };
 
 const cPositions = [-1, 0, 1];

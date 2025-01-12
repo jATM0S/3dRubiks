@@ -222,12 +222,20 @@ export class Roll {
   }
 
   init() {
-    this.cubes.forEach((item) => {
-      if (item.position[this.face.axis] == this.face.value) {
+    if (this.face.value) {
+      this.cubes.forEach((item) => {
+        if (item.position[this.face.axis] == this.face.value) {
+          this.scene.remove(item);
+          this.group.add(item);
+        }
+      });
+      console.log("group was madeeee idk what hapenned");
+    } else {
+      this.cubes.forEach((item) => {
         this.scene.remove(item);
         this.group.add(item);
-      }
-    });
+      });
+    }
   }
 
   rollFace() {
