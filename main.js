@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
-import { initialColors, materials, Roll } from "./3Dhelpers";
+import { initialColors, materials, Roll, stateMap } from "./3Dhelpers";
 let scene, camera, renderer, controls, rollObject, group;
 let moveQueue = [];
 let isRotating = false;
@@ -16,7 +16,6 @@ const rotateConditions = {
 
 const cPositions = [-1, 0, 1];
 let cubes = [];
-
 
 // setting the scene cameras and orbits
 function init() {
@@ -50,13 +49,18 @@ function onWindowResize() {
 
 function createObjects() {
   const geometry = new RoundedBoxGeometry(1, 1, 1, 1, 0.12);
-  let index =0;
+  let index = 0;
   let createCube = (position) => {
     let mat = [];
     for (let i = 0; i < 6; i++) {
-      mat.push(materials[initialColors.front[1]]);
+      if (stateMap[index][i]) {
+        const values = stateMap[index][i];
+        mat.push(materials[initialColors[values.position][values.no]]);
+      } else {
+        mat.push(materials.black);
+      }
     }
-    index=index+1
+    index++;
     const cube = new THREE.Mesh(geometry, mat);
     cube.position.set(position.x, position.y, position.z);
     cubes.push(cube);
