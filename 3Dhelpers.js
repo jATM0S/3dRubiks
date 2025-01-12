@@ -229,7 +229,6 @@ export class Roll {
           this.group.add(item);
         }
       });
-      console.log("group was madeeee idk what hapenned");
     } else {
       this.cubes.forEach((item) => {
         this.scene.remove(item);

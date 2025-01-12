@@ -94,8 +94,6 @@ function createObjects() {
 }
 
 async function processNextMove() {
-  if (moveQueue.length === 0 || isRotating) return;
-
   isRotating = true;
   const move = moveQueue.shift();
   rollObject = new Roll(
